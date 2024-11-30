@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/user.model.js';
 import { config } from '../config/index.js';
-import { HTTP_STATUS } from '../utils/constants/http.constants.js';
+import { HTTP_STATUS } from '../utils/constants/index.js';
 import { validatePassword } from '../utils/helpers/validation.js';
 
 const register = async (req, res) => {

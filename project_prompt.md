@@ -4,6 +4,7 @@
 - **Name**: Event Platform
 - **Stack**: MERN (MongoDB, Express, React, Node.js)
 - **Primary Goal**: Create a modern, scalable event and merchandise platform
+- **Approach**: Minimalist and efficient design with focus on essential features
 
 ## Technical Architecture
 
