@@ -1,11 +1,7 @@
 import express from 'express';
-import { authController, userController } from '../controllers/index.js';
-import { newsletterController } from '../controllers/newsletter.controller.js';
-import { eventController } from '../controllers/event.controller.js';
-import { contactController } from '../controllers/contact.controller.js';
-import { verifyToken, isAdmin } from '../middleware/index.js';
-import upload from '../middleware/upload.js';
-import { HTTP_STATUS } from '../utils/index.js';
+import { authController, userController, eventController, contactController, newsletterController } from '../controllers/index.js';
+import { authenticate, authorize, requireAuth, requireAdmin, upload } from '../middleware/index.js';
+import { HTTP_STATUS } from '../utils.js';
 
 export const configureRoutes = (app) => {
   // Health check route
@@ -22,59 +18,58 @@ export const configureRoutes = (app) => {
   // Public auth routes
   authRoutes.post('/register', authController.register);
   authRoutes.post('/login', authController.login);
-  authRoutes.post('/forgot-password', authController.forgotPassword);
-  authRoutes.post('/reset-password/:token', authController.resetPassword);
+  authRoutes.post('/logout', requireAuth, authController.logout);
   
-  // Protected profile routes
-  authRoutes.use('/profile', verifyToken);
-  authRoutes.get('/profile', authController.getProfile);
-  authRoutes.put('/profile', authController.updateProfile);
-  authRoutes.put('/profile/password', authController.changePassword);
+  // Password management routes
+  authRoutes.post('/password/forgot', authController.forgotPassword);
+  authRoutes.put('/password/reset/:token', authController.resetPassword);
+  authRoutes.put('/password/change', requireAuth, authController.changePassword);
+  
+  // Profile routes
+  authRoutes.get('/profile', requireAuth, authController.profile);
+  authRoutes.put('/profile', requireAuth, authController.updateProfile);
+
+  // Mount auth routes
+  app.use('/api/auth', authRoutes);
 
   // User management routes (admin only)
   const userRoutes = express.Router();
-  userRoutes.use(verifyToken, isAdmin);
+  userRoutes.use(requireAdmin);
   
   userRoutes.get('/admins', userController.getAdmins);
   userRoutes.get('/users', userController.getUsers);
   userRoutes.put('/admin/:id', userController.updateAdmin);
   userRoutes.put('/admin/:id/password', userController.changeAdminPassword);
 
+  // Mount user routes
+  app.use('/api/users', userRoutes);
+
   // Event routes
   const eventRoutes = express.Router();
   eventRoutes.get('/events', eventController.getEvents);
   eventRoutes.get('/events/:id', eventController.getEvent);
-  eventRoutes.post('/events', verifyToken, isAdmin, upload.array('images', 5), eventController.createEvent);
-  eventRoutes.put('/events/:id', verifyToken, isAdmin, upload.array('images', 5), eventController.updateEvent);
-  eventRoutes.delete('/events/:id', verifyToken, isAdmin, eventController.deleteEvent);
+  eventRoutes.post('/events', requireAdmin, upload.array('images', 5), eventController.createEvent);
+  eventRoutes.put('/events/:id', requireAdmin, upload.array('images', 5), eventController.updateEvent);
+  eventRoutes.delete('/events/:id', requireAdmin, eventController.deleteEvent);
+
+  // Mount event routes
+  app.use('/api/events', eventRoutes);
 
   // Newsletter routes
   const newsletterRoutes = express.Router();
   
-  // Route pour s'inscrire/se désinscrire (utilisateur connecté)
-  newsletterRoutes.put('/subscription', verifyToken, newsletterController.toggleSubscription);
-  
-  // Route pour envoyer une newsletter (admin uniquement)
-  newsletterRoutes.post('/send', verifyToken, isAdmin, newsletterController.sendNewsletter);
+  newsletterRoutes.put('/subscription', requireAuth, newsletterController.toggleSubscription);
+  newsletterRoutes.post('/send', requireAdmin, newsletterController.sendNewsletter);
+
+  // Mount newsletter routes
+  app.use('/api/newsletter', newsletterRoutes);
 
   // Contact routes
   const contactRoutes = express.Router();
   contactRoutes.post('/contact', contactController.createContact);
-  contactRoutes.get('/contact', verifyToken, isAdmin, contactController.getContacts);
-  contactRoutes.put('/contact/:id', verifyToken, isAdmin, contactController.updateContactStatus);
+  contactRoutes.get('/contact', requireAdmin, contactController.getContacts);
+  contactRoutes.put('/contact/:id', requireAdmin, contactController.updateContactStatus);
 
-  // Mount routes
-  app.use('/api/v1/auth', authRoutes);
-  app.use('/api/v1/users', userRoutes);
-  app.use('/api/v1/events', eventRoutes);
-  app.use('/api/v1/newsletter', newsletterRoutes);
-  app.use('/api/v1/contact', contactRoutes);
-
-  // 404 handler
-  app.use('*', (req, res) => {
-    res.status(HTTP_STATUS.NOT_FOUND).json({
-      status: 'error',
-      message: 'Route not found'
-    });
-  });
+  // Mount contact routes
+  app.use('/api/contact', contactRoutes);
 };

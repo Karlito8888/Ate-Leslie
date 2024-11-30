@@ -1,33 +1,47 @@
 import express from 'express';
-import { connectDB, config } from './config/index.js';
+import swaggerUi from 'swagger-ui-express';
 import { configureMiddleware } from './middleware/index.js';
 import { configureRoutes } from './routes/index.js';
-import { HTTP_STATUS, sendError } from './utils/index.js';
-
-// Connexion à la base de données
-await connectDB();
+import { config, connectDB, HTTP_STATUS, sendError } from './utils.js';
+import { swaggerSpec } from './swagger.js';
 
 const app = express();
 
-// Configuration des middlewares
+// Configure middleware
 configureMiddleware(app);
 
-// Configuration des routes
+// Swagger documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// Configure routes
 configureRoutes(app);
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  sendError(res, err);
-});
-
-// Gestion des routes non trouvées
-app.use((req, res) => {
-  res.status(HTTP_STATUS.NOT_FOUND).json({
-    success: false,
-    message: 'Route non trouvée'
+// 404 handler
+app.use('*', (req, res) => {
+  sendError(res, {
+    statusCode: HTTP_STATUS.NOT_FOUND,
+    message: `Route ${req.originalUrl} not found`
   });
 });
 
-app.listen(config.app.port, () => {
-  console.log(`Server is running in ${config.app.env} mode on port ${config.app.port}`);
+// Global error handler
+app.use((error, req, res, next) => {
+  console.error('Global error handler caught:', error);
+  sendError(res, error);
 });
+
+// Start server
+const startServer = async () => {
+  try {
+    await connectDB();
+    app.listen(config.server.port, () => {
+      console.log(`Server running on port ${config.server.port}`);
+      console.log(`API documentation available at http://localhost:${config.server.port}/api-docs`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+startServer();
