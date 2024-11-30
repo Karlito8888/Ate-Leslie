@@ -1,0 +1,266 @@
+{
+	"info": {
+		"_postman_id": "random-uuid",
+		"name": "Ate-Leslie-API",
+		"description": "Collection pour l'API Ate-Leslie Event Platform",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Health Check",
+			"request": {
+				"method": "GET",
+				"url": {
+					"raw": "http://localhost:5000",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "5000"
+				},
+				"description": "Vérifie si l'API fonctionne"
+			}
+		},
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Register",
+					"request": {
+						"method": "POST",
+						"url": {
+							"raw": "http://localhost:5000/api/v1/auth/register",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "5000",
+							"path": ["api", "v1", "auth", "register"]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"john_doe\",\n    \"email\": \"john@example.com\",\n    \"password\": \"Password123!\",\n    \"confirmPassword\": \"Password123!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Inscription d'un nouvel utilisateur"
+					}
+				},
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"url": {
+							"raw": "http://localhost:5000/api/v1/auth/login",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "5000",
+							"path": ["api", "v1", "auth", "login"]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"admin1@ateleslie.com\",\n    \"password\": \"Admin123!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Connexion utilisateur"
+					}
+				},
+				{
+					"name": "Get Profile",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "http://localhost:5000/api/v1/auth/profile",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "5000",
+							"path": ["api", "v1", "auth", "profile"]
+						},
+						"headers": {
+							"Authorization": "Bearer {{token}}"
+						},
+						"description": "Obtenir le profil de l'utilisateur connecté"
+					}
+				},
+				{
+					"name": "Update Profile",
+					"request": {
+						"method": "PUT",
+						"url": {
+							"raw": "http://localhost:5000/api/v1/auth/profile",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "5000",
+							"path": ["api", "v1", "auth", "profile"]
+						},
+						"headers": {
+							"Authorization": "Bearer {{token}}"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"nouveau_nom\",\n    \"email\": \"nouveau@email.com\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Mettre à jour le profil utilisateur"
+					}
+				},
+				{
+					"name": "Change Password",
+					"request": {
+						"method": "PUT",
+						"url": {
+							"raw": "http://localhost:5000/api/v1/auth/change-password",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "5000",
+							"path": ["api", "v1", "auth", "change-password"]
+						},
+						"headers": {
+							"Authorization": "Bearer {{token}}"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"currentPassword\": \"Password123!\",\n    \"newPassword\": \"NewPassword123!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Changer le mot de passe utilisateur"
+					}
+				}
+			]
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "Get All Admins",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "http://localhost:5000/api/v1/users/admins",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "5000",
+							"path": ["api", "v1", "users", "admins"]
+						},
+						"headers": {
+							"Authorization": "Bearer {{token}}"
+						},
+						"description": "Récupère la liste de tous les administrateurs"
+					}
+				},
+				{
+					"name": "Update Admin",
+					"request": {
+						"method": "PUT",
+						"url": {
+							"raw": "http://localhost:5000/api/v1/users/admin/:id",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "5000",
+							"path": ["api", "v1", "users", "admin", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "",
+									"description": "ID de l'administrateur"
+								}
+							]
+						},
+						"headers": {
+							"Authorization": "Bearer {{token}}"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"nouveau_nom\",\n    \"email\": \"nouveau@email.com\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Met à jour les informations d'un administrateur"
+					}
+				},
+				{
+					"name": "Change Admin Password",
+					"request": {
+						"method": "PUT",
+						"url": {
+							"raw": "http://localhost:5000/api/v1/users/admin/:id/password",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "5000",
+							"path": ["api", "v1", "users", "admin", ":id", "password"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "",
+									"description": "ID de l'administrateur"
+								}
+							]
+						},
+						"headers": {
+							"Authorization": "Bearer {{token}}"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"currentPassword\": \"Admin123!\",\n    \"newPassword\": \"NouveauMotDePasse123!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Change le mot de passe d'un administrateur"
+					}
+				}
+			]
+		},
+		{
+			"name": "Tests",
+			"item": [
+				{
+					"name": "Create Test",
+					"request": {
+						"method": "POST",
+						"url": {
+							"raw": "http://localhost:5000/api/v1/tests",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "5000",
+							"path": ["api", "v1", "tests"]
+						},
+						"description": "Crée un test dans la base de données"
+					}
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [""]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [""]
+			}
+		}
+	]
+}
