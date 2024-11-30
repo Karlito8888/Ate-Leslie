@@ -1,14 +1,8 @@
-// Point d'entrée du serveur Express
 import express from 'express';
-import dotenv from 'dotenv';
-import connectDB from './config/database.js';
+import { connectDB, config } from './config/index.js';
 import { configureMiddleware } from './middleware/index.js';
 import { configureRoutes } from './routes/index.js';
-import { handleError } from './utils/helpers/errorHandler.js';
-import { HTTP_STATUS } from './utils/constants/index.js';
-
-// Configuration des variables d'environnement
-dotenv.config();
+import { HTTP_STATUS, sendError } from './utils/index.js';
 
 // Connexion à la base de données
 await connectDB();
@@ -21,9 +15,9 @@ configureMiddleware(app);
 // Configuration des routes
 configureRoutes(app);
 
-// Middleware de gestion des erreurs
+// Error handling middleware
 app.use((err, req, res, next) => {
-  handleError(err, res);
+  sendError(res, err);
 });
 
 // Gestion des routes non trouvées
@@ -34,8 +28,6 @@ app.use((req, res) => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
-
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+app.listen(config.app.port, () => {
+  console.log(`Server is running in ${config.app.env} mode on port ${config.app.port}`);
 });

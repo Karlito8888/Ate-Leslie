@@ -11,10 +11,11 @@
 			"request": {
 				"method": "GET",
 				"url": {
-					"raw": "http://localhost:5000",
+					"raw": "http://localhost:5000/health",
 					"protocol": "http",
 					"host": ["localhost"],
-					"port": "5000"
+					"port": "5000",
+					"path": ["health"]
 				},
 				"description": "Vérifie si l'API fonctionne"
 			}
@@ -58,14 +59,67 @@
 						},
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"email\": \"admin1@ateleslie.com\",\n    \"password\": \"Admin123!\"\n}",
+							"raw": "{\n    \"email\": \"john@example.com\",\n    \"password\": \"Password123!\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
 								}
 							}
 						},
-						"description": "Connexion utilisateur"
+						"description": "Connexion utilisateur (admin ou utilisateur normal)"
+					}
+				},
+				{
+					"name": "Forgot Password",
+					"request": {
+						"method": "POST",
+						"url": {
+							"raw": "http://localhost:5000/api/v1/auth/forgot-password",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "5000",
+							"path": ["api", "v1", "auth", "forgot-password"]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"john@example.com\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Demande de réinitialisation de mot de passe"
+					}
+				},
+				{
+					"name": "Reset Password",
+					"request": {
+						"method": "POST",
+						"url": {
+							"raw": "http://localhost:5000/api/v1/auth/reset-password/:token",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "5000",
+							"path": ["api", "v1", "auth", "reset-password", ":token"],
+							"variable": [
+								{
+									"key": "token",
+									"value": "",
+									"description": "Token de réinitialisation reçu par email"
+								}
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"password\": \"NewPassword123!\",\n    \"confirmPassword\": \"NewPassword123!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Réinitialisation du mot de passe avec le token"
 					}
 				},
 				{
@@ -116,18 +170,18 @@
 					"request": {
 						"method": "PUT",
 						"url": {
-							"raw": "http://localhost:5000/api/v1/auth/change-password",
+							"raw": "http://localhost:5000/api/v1/auth/profile/password",
 							"protocol": "http",
 							"host": ["localhost"],
 							"port": "5000",
-							"path": ["api", "v1", "auth", "change-password"]
+							"path": ["api", "v1", "auth", "profile", "password"]
 						},
 						"headers": {
 							"Authorization": "Bearer {{token}}"
 						},
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"currentPassword\": \"Password123!\",\n    \"newPassword\": \"NewPassword123!\"\n}",
+							"raw": "{\n    \"currentPassword\": \"Password123!\",\n    \"newPassword\": \"NewPassword123!\",\n    \"confirmPassword\": \"NewPassword123!\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -140,8 +194,25 @@
 			]
 		},
 		{
-			"name": "Users",
+			"name": "Admin",
 			"item": [
+				{
+					"name": "Get All Users",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "http://localhost:5000/api/v1/users/users",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "5000",
+							"path": ["api", "v1", "users", "users"]
+						},
+						"headers": {
+							"Authorization": "Bearer {{token}}"
+						},
+						"description": "Récupère la liste de tous les utilisateurs (admin uniquement)"
+					}
+				},
 				{
 					"name": "Get All Admins",
 					"request": {
@@ -156,7 +227,7 @@
 						"headers": {
 							"Authorization": "Bearer {{token}}"
 						},
-						"description": "Récupère la liste de tous les administrateurs"
+						"description": "Récupère la liste de tous les administrateurs (admin uniquement)"
 					}
 				},
 				{
@@ -189,7 +260,7 @@
 								}
 							}
 						},
-						"description": "Met à jour les informations d'un administrateur"
+						"description": "Met à jour les informations d'un administrateur (admin uniquement)"
 					}
 				},
 				{
@@ -215,14 +286,14 @@
 						},
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"currentPassword\": \"Admin123!\",\n    \"newPassword\": \"NouveauMotDePasse123!\"\n}",
+							"raw": "{\n    \"password\": \"NewPassword123!\",\n    \"confirmPassword\": \"NewPassword123!\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
 								}
 							}
 						},
-						"description": "Change le mot de passe d'un administrateur"
+						"description": "Change le mot de passe d'un administrateur (admin uniquement)"
 					}
 				}
 			]
@@ -261,6 +332,13 @@
 				"type": "text/javascript",
 				"exec": [""]
 			}
+		}
+	],
+	"variable": [
+		{
+			"key": "token",
+			"value": "your_jwt_token_here",
+			"type": "string"
 		}
 	]
 }
