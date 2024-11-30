@@ -36,14 +36,14 @@
 						},
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"username\": \"john_doe\",\n    \"email\": \"john@example.com\",\n    \"password\": \"Password123!\",\n    \"confirmPassword\": \"Password123!\"\n}",
+							"raw": "{\n    \"username\": \"john_doe\",\n    \"email\": \"john@example.com\",\n    \"password\": \"Password123!\",\n    \"confirmPassword\": \"Password123!\",\n    \"newsletterSubscribed\": true\n}",
 							"options": {
 								"raw": {
 									"language": "json"
 								}
 							}
 						},
-						"description": "Inscription d'un nouvel utilisateur"
+						"description": "Inscription d'un nouvel utilisateur (newsletterSubscribed est optionnel, par défaut à true)"
 					}
 				},
 				{
@@ -294,6 +294,54 @@
 							}
 						},
 						"description": "Change le mot de passe d'un administrateur (admin uniquement)"
+					}
+				}
+			]
+		},
+		{
+			"name": "Newsletter",
+			"item": [
+				{
+					"name": "Toggle Newsletter Subscription",
+					"request": {
+						"method": "PUT",
+						"url": {
+							"raw": "http://localhost:5000/api/v1/newsletter/subscription",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "5000",
+							"path": ["api", "v1", "newsletter", "subscription"]
+						},
+						"headers": {
+							"Authorization": "Bearer {{token}}"
+						},
+						"description": "S'inscrire ou se désinscrire de la newsletter"
+					}
+				},
+				{
+					"name": "Send Newsletter",
+					"request": {
+						"method": "POST",
+						"url": {
+							"raw": "http://localhost:5000/api/v1/newsletter/send",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "5000",
+							"path": ["api", "v1", "newsletter", "send"]
+						},
+						"headers": {
+							"Authorization": "Bearer {{token}}"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"subject\": \"Nouvelle Newsletter\",\n    \"content\": \"Contenu de la newsletter avec <b>support HTML</b>\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Envoyer une newsletter (admin uniquement)"
 					}
 				}
 			]

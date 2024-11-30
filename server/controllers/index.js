@@ -8,23 +8,41 @@ import crypto from 'crypto';
 // ====== Auth Controller ======
 export const authController = {
   register: asyncHandler(async (req, res) => {
-    const { username, email, password, confirmPassword } = req.body;
+    const { username, email, password, confirmPassword, newsletterSubscribed = true } = req.body;
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ 
+      $or: [{ email }, { username }] 
+    });
+    
     if (existingUser) {
-      throw new ApiError(HTTP_STATUS.CONFLICT, 'User with this email already exists');
-    }
-
-    // Check if passwords match
-    if (password !== confirmPassword) {
-      throw new ApiError(HTTP_STATUS.BAD_REQUEST, 'Passwords do not match');
+      throw new ApiError(
+        HTTP_STATUS.CONFLICT,
+        'User with this email or username already exists'
+      );
     }
 
     // Validate password
     const passwordValidation = validate.password(password);
     if (!passwordValidation.isValid) {
       throw new ApiError(HTTP_STATUS.BAD_REQUEST, passwordValidation.message);
+    }
+
+    // Validate email
+    const emailValidation = validate.email(email);
+    if (!emailValidation.isValid) {
+      throw new ApiError(HTTP_STATUS.BAD_REQUEST, emailValidation.message);
+    }
+
+    // Validate username
+    const usernameValidation = validate.username(username);
+    if (!usernameValidation.isValid) {
+      throw new ApiError(HTTP_STATUS.BAD_REQUEST, usernameValidation.message);
+    }
+
+    // Check if passwords match
+    if (password !== confirmPassword) {
+      throw new ApiError(HTTP_STATUS.BAD_REQUEST, 'Passwords do not match');
     }
 
     // Hash password
@@ -36,6 +54,7 @@ export const authController = {
       username,
       email,
       password: hashedPassword,
+      newsletterSubscribed,
       role: 'user'
     });
 

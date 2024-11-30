@@ -25,6 +25,19 @@ const userSchema = new mongoose.Schema({
       message: 'Please provide a valid email address'
     }
   },
+  phoneNumber: {
+    type: String,
+    required: false,
+    trim: true,
+    validate: {
+      validator: function(v) {
+        // Valide les numéros de téléphone internationaux (format E.164)
+        // Exemple: +33612345678
+        return !v || /^\+[1-9]\d{1,14}$/.test(v);
+      },
+      message: props => `${props.value} n'est pas un numéro de téléphone international valide! Format attendu: +33612345678`
+    }
+  },
   password: {
     type: String,
     required: [true, 'Password is required'],
@@ -41,6 +54,10 @@ const userSchema = new mongoose.Schema({
       message: 'Role {VALUE} is not valid'
     },
     default: 'user'
+  },
+  newsletterSubscribed: {
+    type: Boolean,
+    default: true
   },
   resetPasswordToken: String,
   resetPasswordExpires: Date,
