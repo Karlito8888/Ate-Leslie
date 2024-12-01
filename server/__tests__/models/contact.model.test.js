@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import Contact from '../../models/contact.model.js';
+import { Contact } from '../../models/index.js';
 import * as dbHandler from '../helpers/db.js';
 
 describe('Contact Model Test', () => {

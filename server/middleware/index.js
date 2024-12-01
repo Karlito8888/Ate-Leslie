@@ -4,15 +4,20 @@ import cookieParser from 'cookie-parser';
 import multer from 'multer';
 import path from 'path';
 import crypto from 'crypto';
+import { promises as fs } from 'fs';
 import { HTTP_STATUS, ApiError, verifyToken, hasPermission, config } from '../utils.js';
 import { User } from '../models/index.js';
 
 // ====== Configuration Middleware ======
-export const configureMiddleware = (app) => {
+export const configureMiddleware = async (app) => {
+  // Créer les répertoires d'uploads s'ils n'existent pas
+  await fs.mkdir(config.app.uploadsDir, { recursive: true });
+  await fs.mkdir(config.image.uploadDir, { recursive: true });
+
   // Security middlewares
   app.use(cors({
-    origin: config.client.url,
-    ...config.cors
+    origin: process.env.CLIENT_URL || 'http://localhost:5173', // URL par défaut pour le développement
+    credentials: true
   }));
 
   // Body parsing middlewares
@@ -30,8 +35,8 @@ const storage = multer.diskStorage({
     cb(null, config.image.uploadDir);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = crypto.randomBytes(16).toString('hex');
-    cb(null, uniqueSuffix + path.extname(file.originalname));
+    const uniqueSuffix = crypto.randomBytes(8).toString('hex');
+    cb(null, `${uniqueSuffix}${path.extname(file.originalname)}`);
   }
 });
 
@@ -41,246 +46,292 @@ const fileFilter = (req, file, cb) => {
   } else {
     cb(new ApiError(
       HTTP_STATUS.BAD_REQUEST,
-      'Invalid file type. Only JPG, PNG and WebP are allowed.'
+      'Invalid file type. Only JPEG, PNG and WebP images are allowed.'
     ), false);
   }
 };
 
 export const upload = multer({
-  storage: storage,
-  fileFilter: fileFilter,
+  storage,
+  fileFilter,
   limits: {
-    fileSize: config.image.maxSize,
-    files: 5
+    fileSize: config.image.maxSize
   }
 });
 
 // ====== Auth Middleware ======
-export const authenticate = async (req, res, next) => {
-  try {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) {
-      throw new ApiError(HTTP_STATUS.UNAUTHORIZED, 'Authentication required');
-    }
+export const authMiddleware = {
+  authenticate: async (req, res, next) => {
+    try {
+      const token = req.cookies.token;
+      if (!token) {
+        throw new ApiError(HTTP_STATUS.UNAUTHORIZED, 'Authentication required');
+      }
 
-    const decoded = verifyToken(token);
-    req.user = decoded;
-    next();
-  } catch (error) {
-    next(new ApiError(HTTP_STATUS.UNAUTHORIZED, 'Invalid token'));
+      const decoded = verifyToken(token);
+      const user = await User.findById(decoded.id).select('-password');
+
+      if (!user) {
+        throw new ApiError(HTTP_STATUS.UNAUTHORIZED, 'User not found');
+      }
+
+      req.user = user;
+      next();
+    } catch (error) {
+      next(new ApiError(HTTP_STATUS.UNAUTHORIZED, 'Invalid authentication'));
+    }
+  },
+
+  authorize: (resource, action) => {
+    return (req, res, next) => {
+      if (!req.user) {
+        return next(new ApiError(HTTP_STATUS.UNAUTHORIZED, 'Authentication required'));
+      }
+
+      if (!hasPermission(req.user.role, resource, action)) {
+        return next(new ApiError(HTTP_STATUS.FORBIDDEN, 'Permission denied'));
+      }
+
+      next();
+    };
   }
-};
-
-export const authorize = (resource, action) => {
-  return (req, res, next) => {
-    const { role } = req.user;
-    
-    if (!hasPermission(role, resource, action)) {
-      throw new ApiError(
-        HTTP_STATUS.FORBIDDEN,
-        'You do not have permission to perform this action'
-      );
-    }
-    
-    next();
-  };
 };
 
 // Common middleware combinations
-export const requireAuth = [authenticate];
-export const requireAdmin = [authenticate, authorize('admin', 'access')];
+export const requireAuth = [authMiddleware.authenticate];
+export const requireAdmin = [authMiddleware.authenticate, authMiddleware.authorize('admin', 'access')];
 
-// ====== Validation Middleware ======
+export const { authenticate, authorize } = authMiddleware;
+
+// ====== Validators ======
 export const validators = {
-  // User registration validation
-  validateRegistration: async (req, res, next) => {
-    try {
-      const { username, email, password, confirmPassword } = req.body;
-
-      // Validate username
-      if (!username || username.length < 3) {
-        throw new ApiError(
-          HTTP_STATUS.BAD_REQUEST,
-          'Username must be at least 3 characters long'
-        );
-      }
-
-      // Validate email
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!email || !emailRegex.test(email)) {
-        throw new ApiError(
-          HTTP_STATUS.BAD_REQUEST,
-          'Please provide a valid email address'
-        );
-      }
-
-      // Validate password
-      if (!password || password.length < 8) {
-        throw new ApiError(
-          HTTP_STATUS.BAD_REQUEST,
-          'Password must be at least 8 characters long'
-        );
-      }
-
-      // Check password confirmation
-      if (confirmPassword && password !== confirmPassword) {
-        throw new ApiError(
-          HTTP_STATUS.BAD_REQUEST,
-          'Passwords do not match'
-        );
-      }
-
-      // Check if user already exists
-      const existingUser = await User.findOne({ $or: [{ email }, { username }] });
-      if (existingUser) {
-        throw new ApiError(
-          HTTP_STATUS.CONFLICT,
-          existingUser.email === email 
-            ? 'Email already exists'
-            : 'Username already exists'
-        );
-      }
-
-      next();
-    } catch (error) {
-      next(error);
+  // Validation des champs individuels
+  username: (value) => {
+    if (!value || value.length < 3) {
+      return { isValid: false, message: 'Username must be at least 3 characters long' };
     }
+    if (!value.match(/^[a-zA-Z0-9_-]+$/)) {
+      return { isValid: false, message: 'Username can only contain letters, numbers, underscores and hyphens' };
+    }
+    return { isValid: true, message: '' };
   },
 
-  // Login validation
+  email: (value) => {
+    if (!value || !value.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      return { isValid: false, message: 'Invalid email address' };
+    }
+    return { isValid: true, message: '' };
+  },
+
+  password: (value) => {
+    if (!value || value.length < 8) {
+      return { isValid: false, message: 'Password must be at least 8 characters long' };
+    }
+    if (!value.match(/[A-Z]/)) {
+      return { isValid: false, message: 'Password must contain at least one uppercase letter' };
+    }
+    if (!value.match(/[a-z]/)) {
+      return { isValid: false, message: 'Password must contain at least one lowercase letter' };
+    }
+    if (!value.match(/[0-9]/)) {
+      return { isValid: false, message: 'Password must contain at least one number' };
+    }
+    return { isValid: true, message: '' };
+  },
+
+  phone: (value) => {
+    if (!value) return { isValid: true, message: '' }; // Optional field
+    if (!value.match(/^\+?[\d\s-]{10,}$/)) {
+      return { isValid: false, message: 'Invalid phone number format' };
+    }
+    return { isValid: true, message: '' };
+  },
+
+  validateRegistration: (req, res, next) => {
+    const { email, password, firstName, lastName } = req.body;
+
+    const errors = [];
+
+    // Email validation
+    if (!email || !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      errors.push('Invalid email address');
+    }
+
+    // Password validation
+    if (!password || password.length < 8) {
+      errors.push('Password must be at least 8 characters long');
+    }
+
+    if (!password.match(/[A-Z]/)) {
+      errors.push('Password must contain at least one uppercase letter');
+    }
+
+    if (!password.match(/[a-z]/)) {
+      errors.push('Password must contain at least one lowercase letter');
+    }
+
+    if (!password.match(/[0-9]/)) {
+      errors.push('Password must contain at least one number');
+    }
+
+    // Name validation
+    if (!firstName || firstName.length < 2) {
+      errors.push('First name must be at least 2 characters long');
+    }
+
+    if (!lastName || lastName.length < 2) {
+      errors.push('Last name must be at least 2 characters long');
+    }
+
+    if (errors.length > 0) {
+      return next(new ApiError(HTTP_STATUS.BAD_REQUEST, errors.join(', ')));
+    }
+
+    next();
+  },
+
   validateLogin: (req, res, next) => {
-    try {
-      const { email, password } = req.body;
+    const { email, password } = req.body;
 
-      if (!email || !password) {
-        throw new ApiError(
-          HTTP_STATUS.BAD_REQUEST,
-          'Please provide both email and password'
-        );
-      }
+    const errors = [];
 
-      next();
-    } catch (error) {
-      next(error);
+    if (!email || !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      errors.push('Invalid email address');
     }
+
+    if (!password) {
+      errors.push('Password is required');
+    }
+
+    if (errors.length > 0) {
+      return next(new ApiError(HTTP_STATUS.BAD_REQUEST, errors.join(', ')));
+    }
+
+    next();
   },
 
-  // Profile update validation
-  validateProfileUpdate: async (req, res, next) => {
-    try {
-      const { username, email } = req.body;
-      const userId = req.user.id;
+  validateProfileUpdate: (req, res, next) => {
+    const { email, firstName, lastName, currentPassword, newPassword } = req.body;
 
-      if (username) {
-        if (username.length < 3) {
-          throw new ApiError(
-            HTTP_STATUS.BAD_REQUEST,
-            'Username must be at least 3 characters long'
-          );
-        }
+    const errors = [];
 
-        const existingUsername = await User.findOne({
-          username,
-          _id: { $ne: userId }
-        });
-        if (existingUsername) {
-          throw new ApiError(
-            HTTP_STATUS.CONFLICT,
-            'Username already exists'
-          );
-        }
-      }
-
-      if (email) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-          throw new ApiError(
-            HTTP_STATUS.BAD_REQUEST,
-            'Please provide a valid email address'
-          );
-        }
-
-        const existingEmail = await User.findOne({
-          email,
-          _id: { $ne: userId }
-        });
-        if (existingEmail) {
-          throw new ApiError(
-            HTTP_STATUS.CONFLICT,
-            'Email already exists'
-          );
-        }
-      }
-
-      next();
-    } catch (error) {
-      next(error);
+    if (email && !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      errors.push('Invalid email address');
     }
-  },
 
-  // Password change validation
-  validatePasswordChange: (req, res, next) => {
-    try {
-      const { currentPassword, newPassword, confirmPassword } = req.body;
+    if (firstName && firstName.length < 2) {
+      errors.push('First name must be at least 2 characters long');
+    }
 
-      if (!currentPassword || !newPassword) {
-        throw new ApiError(
-          HTTP_STATUS.BAD_REQUEST,
-          'Please provide both current and new password'
-        );
+    if (lastName && lastName.length < 2) {
+      errors.push('Last name must be at least 2 characters long');
+    }
+
+    // Password update validation
+    if (newPassword) {
+      if (!currentPassword) {
+        errors.push('Current password is required to set a new password');
       }
 
       if (newPassword.length < 8) {
-        throw new ApiError(
-          HTTP_STATUS.BAD_REQUEST,
-          'New password must be at least 8 characters long'
-        );
+        errors.push('New password must be at least 8 characters long');
       }
 
-      if (confirmPassword && newPassword !== confirmPassword) {
-        throw new ApiError(
-          HTTP_STATUS.BAD_REQUEST,
-          'Passwords do not match'
-        );
+      if (!newPassword.match(/[A-Z]/)) {
+        errors.push('New password must contain at least one uppercase letter');
       }
 
-      next();
-    } catch (error) {
-      next(error);
+      if (!newPassword.match(/[a-z]/)) {
+        errors.push('New password must contain at least one lowercase letter');
+      }
+
+      if (!newPassword.match(/[0-9]/)) {
+        errors.push('New password must contain at least one number');
+      }
     }
+
+    if (errors.length > 0) {
+      return next(new ApiError(HTTP_STATUS.BAD_REQUEST, errors.join(', ')));
+    }
+
+    next();
   },
 
-  // Password reset validation
-  validatePasswordReset: (req, res, next) => {
-    try {
-      const { password, confirmPassword } = req.body;
+  validatePasswordChange: (req, res, next) => {
+    const { currentPassword, newPassword } = req.body;
 
-      if (!password || password.length < 8) {
-        throw new ApiError(
-          HTTP_STATUS.BAD_REQUEST,
-          'Password must be at least 8 characters long'
-        );
-      }
+    const errors = [];
 
-      if (confirmPassword && password !== confirmPassword) {
-        throw new ApiError(
-          HTTP_STATUS.BAD_REQUEST,
-          'Passwords do not match'
-        );
-      }
-
-      next();
-    } catch (error) {
-      next(error);
+    if (!currentPassword) {
+      errors.push('Current password is required');
     }
+
+    if (!newPassword) {
+      errors.push('New password is required');
+    } else {
+      if (newPassword.length < 8) {
+        errors.push('New password must be at least 8 characters long');
+      }
+
+      if (!newPassword.match(/[A-Z]/)) {
+        errors.push('New password must contain at least one uppercase letter');
+      }
+
+      if (!newPassword.match(/[a-z]/)) {
+        errors.push('New password must contain at least one lowercase letter');
+      }
+
+      if (!newPassword.match(/[0-9]/)) {
+        errors.push('New password must contain at least one number');
+      }
+    }
+
+    if (errors.length > 0) {
+      return next(new ApiError(HTTP_STATUS.BAD_REQUEST, errors.join(', ')));
+    }
+
+    next();
+  },
+
+  validatePasswordReset: (req, res, next) => {
+    const { password } = req.body;
+
+    const errors = [];
+
+    if (!password) {
+      errors.push('Password is required');
+    } else {
+      if (password.length < 8) {
+        errors.push('Password must be at least 8 characters long');
+      }
+
+      if (!password.match(/[A-Z]/)) {
+        errors.push('Password must contain at least one uppercase letter');
+      }
+
+      if (!password.match(/[a-z]/)) {
+        errors.push('Password must contain at least one lowercase letter');
+      }
+
+      if (!password.match(/[0-9]/)) {
+        errors.push('Password must contain at least one number');
+      }
+    }
+
+    if (errors.length > 0) {
+      return next(new ApiError(HTTP_STATUS.BAD_REQUEST, errors.join(', ')));
+    }
+
+    next();
   }
 };
+
+export const { username, email, password, phone } = validators;
 
 export default {
   configureMiddleware,
   upload,
-  authenticate,
-  authorize,
+  authMiddleware,
   requireAuth,
   requireAdmin,
   validators

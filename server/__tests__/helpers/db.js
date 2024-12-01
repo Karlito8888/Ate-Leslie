@@ -45,3 +45,15 @@ export const createTestUser = async (User) => {
     role: 'user'
   });
 };
+
+// Create a test contact
+export const createTestContact = async (Contact, contactData = {}) => {
+  const defaultContact = {
+    type: 'information',
+    name: 'Test Contact',
+    email: 'contact@test.com',
+    message: 'Test message'
+  };
+  
+  return await Contact.create({ ...defaultContact, ...contactData });
+};

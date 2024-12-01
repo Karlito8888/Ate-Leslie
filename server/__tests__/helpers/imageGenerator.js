@@ -3,6 +3,11 @@ import path from 'path';
 import { promises as fs } from 'fs';
 
 export const generateTestImage = async (width, height, outputPath) => {
+  // Validation essentielle des dimensions
+  if (!Number.isInteger(width) || !Number.isInteger(height) || width <= 0 || height <= 0) {
+    throw new Error('Width and height must be positive integers');
+  }
+
   // Créer une image de test avec une couleur de fond et du texte
   const svg = `
     <svg width="${width}" height="${height}">
@@ -33,8 +38,13 @@ export const generateTestImage = async (width, height, outputPath) => {
 
 export const cleanupTestImages = async (directory) => {
   try {
-    await fs.rm(directory, { recursive: true, force: true });
+    // Vérifier si le répertoire existe avant de tenter de le supprimer
+    const exists = await fs.access(directory).then(() => true).catch(() => false);
+    if (exists) {
+      await fs.rm(directory, { recursive: true, force: true });
+    }
   } catch (error) {
-    // Ignorer les erreurs si le dossier n'existe pas
+    console.error(`Error cleaning up test directory ${directory}:`, error);
+    throw error; // Remonter l'erreur pour que les tests puissent la gérer
   }
 };

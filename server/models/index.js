@@ -3,7 +3,7 @@ import bcryptjs from 'bcryptjs';
 import crypto from 'crypto';
 import { HTTP_STATUS, ApiError, config } from '../utils.js';
 import jwt from 'jsonwebtoken';
-import validations from '../constants/validation.js';
+import { email, phone, username, password } from '../middleware/index.js';
 
 // ====== User Model ======
 const userSchema = new mongoose.Schema({
@@ -13,8 +13,8 @@ const userSchema = new mongoose.Schema({
     unique: true,
     trim: true,
     validate: {
-      validator: (v) => validations.username(v).isValid,
-      message: (props) => validations.username(props.value).message
+      validator: (v) => username(v).isValid,
+      message: (props) => username(props.value).message
     }
   },
   email: {
@@ -24,8 +24,8 @@ const userSchema = new mongoose.Schema({
     lowercase: true,
     trim: true,
     validate: {
-      validator: (v) => validations.email(v).isValid,
-      message: (props) => validations.email(props.value).message
+      validator: (v) => email(v).isValid,
+      message: (props) => email(props.value).message
     }
   },
   phoneNumber: {
@@ -33,8 +33,8 @@ const userSchema = new mongoose.Schema({
     required: false,
     trim: true,
     validate: {
-      validator: (v) => validations.phone(v).isValid,
-      message: (props) => validations.phone(props.value).message
+      validator: (v) => phone(v).isValid,
+      message: (props) => phone(props.value).message
     }
   },
   password: {
@@ -43,9 +43,9 @@ const userSchema = new mongoose.Schema({
     validate: {
       validator: (v) => {
         if (v.startsWith('$2a$')) return true;
-        return validations.password(v).isValid;
+        return password(v).isValid;
       },
-      message: (props) => validations.password(props.value).message
+      message: (props) => password(props.value).message
     }
   },
   role: {
@@ -69,7 +69,13 @@ userSchema.pre('save', async function(next) {
 });
 
 userSchema.methods.comparePassword = async function(candidatePassword) {
-  return bcryptjs.compare(candidatePassword, this.password);
+  console.log('Comparing passwords:', {
+    candidatePassword,
+    storedPassword: this.password
+  });
+  const isMatch = await bcryptjs.compare(candidatePassword, this.password);
+  console.log('Password match result:', isMatch);
+  return isMatch;
 };
 
 userSchema.methods.generateAuthToken = function() {
@@ -152,6 +158,11 @@ export const Event = mongoose.model('Event', eventSchema);
 
 // ====== Contact Model ======
 const contactSchema = new mongoose.Schema({
+  type: {
+    type: String,
+    required: [true, 'Contact type is required'],
+    enum: ['information', 'callback', 'review']
+  },
   name: {
     type: String,
     required: [true, 'Name is required'],
@@ -164,15 +175,18 @@ const contactSchema = new mongoose.Schema({
     trim: true,
     lowercase: true,
     validate: {
-      validator: (v) => validations.email(v).isValid,
-      message: (props) => validations.email(props.value).message
+      validator: (v) => email(v).isValid,
+      message: (props) => email(props.value).message
     }
   },
-  subject: {
+  phoneNumber: {
     type: String,
-    required: [true, 'Subject is required'],
+    required: false,
     trim: true,
-    maxLength: [100, 'Subject cannot exceed 100 characters']
+    validate: {
+      validator: (v) => !v || phone(v).isValid,
+      message: (props) => phone(props.value).message
+    }
   },
   message: {
     type: String,
@@ -180,10 +194,16 @@ const contactSchema = new mongoose.Schema({
     trim: true,
     maxLength: [1000, 'Message cannot exceed 1000 characters']
   },
+  rating: {
+    type: Number,
+    required: function() { return this.type === 'review'; },
+    min: [1, 'Rating must be at least 1'],
+    max: [5, 'Rating cannot exceed 5']
+  },
   status: {
     type: String,
-    enum: ['new', 'in-progress', 'resolved'],
-    default: 'new'
+    enum: ['pending', 'in-progress', 'resolved'],
+    default: 'pending'
   },
   createdAt: {
     type: Date,
