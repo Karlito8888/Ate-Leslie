@@ -1,29 +1,20 @@
-import { jest, describe, it, expect, beforeAll, afterAll, afterEach } from '@jest/globals';
-import path from 'path';
-import { promises as fs } from 'fs';
-import sharp from 'sharp';
-import { imageService, config } from '../../utils.js';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { imageService } from '../../utils/image.js';
+import { config } from '../../config/index.js';
 import { generateTestImage, cleanupTestImages } from '../helpers/imageGenerator.js';
-import { ApiError, HTTP_STATUS } from '../../utils.js';
 
 describe('Image Service Test', () => {
   const TEST_UPLOAD_DIR = 'uploads/test';
-  const TEST_ORIGINAL_DIR = path.join(TEST_UPLOAD_DIR, 'original');
-  const TEST_THUMBNAILS_DIR = path.join(TEST_UPLOAD_DIR, 'thumbnails');
+  const TEST_ORIGINAL_DIR = 'uploads/test/original';
+  const TEST_THUMBNAILS_DIR = 'uploads/test/thumbnails';
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     await fs.mkdir(TEST_ORIGINAL_DIR, { recursive: true });
     await fs.mkdir(TEST_THUMBNAILS_DIR, { recursive: true });
   });
 
-  afterAll(async () => {
-    await cleanupTestImages(TEST_UPLOAD_DIR);
-  });
-
   afterEach(async () => {
-    await cleanupTestImages(TEST_ORIGINAL_DIR);
-    await cleanupTestImages(TEST_THUMBNAILS_DIR);
-    jest.restoreAllMocks();
+    await cleanupTestImages(TEST_UPLOAD_DIR);
   });
 
   // Tests fonctionnels

@@ -4,13 +4,12 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { configureMiddleware } from "./middleware/index.js";
 import { configureRoutes } from "./routes/index.js";
-import { config, connectDB, HTTP_STATUS, sendError } from "./utils.js";
+import { config } from "./config/index.js";
+import { connectDB, responseHelpers } from "./utils/index.js";
+import { HTTP_STATUS } from "./constants/http.js";
 import { swaggerSpec } from "./swagger.js";
 
 const app = express();
-
-// Use config from utils.js directly
-const currentConfig = config;
 
 // Start server
 const startServer = async () => {
@@ -26,7 +25,7 @@ const startServer = async () => {
 
     // 404 handler
     app.use("*", (req, res) => {
-      sendError(res, {
+      responseHelpers.sendError(res, {
         statusCode: HTTP_STATUS.NOT_FOUND,
         message: `Route ${req.originalUrl} not found`,
       });
@@ -35,21 +34,21 @@ const startServer = async () => {
     // Global error handler
     app.use((error, req, res, next) => {
       console.error("Global error handler caught:", error);
-      sendError(res, error);
+      responseHelpers.sendError(res, error);
     });
 
     // Connect to database and start listening
     await connectDB();
     if (process.env.NODE_ENV !== "test") {
-      app.listen(currentConfig.server.port, () => {
-        console.log(`Server running on port ${currentConfig.server.port}`);
+      app.listen(config.server.port, () => {
+        console.log(`Server running on port ${config.server.port}`);
         console.log(
-          `API documentation available at http://localhost:${currentConfig.server.port}/api-docs`
+          `API documentation available at http://localhost:${config.server.port}/api-docs`
         );
       });
     }
   } catch (error) {
-    console.error("Failed to start server:", error);
+    console.error("Server startup error:", error);
     process.exit(1);
   }
 };

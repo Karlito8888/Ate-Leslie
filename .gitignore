@@ -23,7 +23,7 @@ coverage
 .env.production.local
 
 # Project documentation (contains sensitive information)
-project_prompt.md
+#project_prompt.md
 
 # Logs
 logs

@@ -8,8 +8,8 @@
     "start": "node index.js",
     "dev": "nodemon index.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "create-admin": "node cli.js create-admin",
-    "create-admin:force": "node cli.js create-admin --force"
+    "create-admin": "node cli/index.js create-admin",
+    "create-admin:force": "node cli/index.js create-admin --force"
   },
   "keywords": [
     "mern",
@@ -26,11 +26,14 @@
     "express": "^4.18.2",
     "express-async-handler": "^1.2.0",
     "express-formidable": "^1.2.0",
+    "html-to-text": "^9.0.5",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.1.1",
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.9.16",
-    "sharp": "^0.33.5"
+    "sharp": "^0.33.5",
+    "yargs": "^17.7.2",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",

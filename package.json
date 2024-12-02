@@ -9,7 +9,11 @@
     "server": "cd server && npm run dev",
     "install-all": "npm install && cd client && npm install && cd ../server && npm install"
   },
-  "keywords": ["mern", "events", "merchandise"],
+  "keywords": [
+    "mern",
+    "events",
+    "merchandise"
+  ],
   "author": "",
   "license": "ISC",
   "devDependencies": {
