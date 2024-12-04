@@ -43,13 +43,13 @@ describe('Contact Controller', () => {
       req.validatedData.body = contactData;
       
       const mockContact = { ...contactData, _id: 'mockId' };
-      Contact.create.mockResolvedValue(mockContact);
+      Contact.create = jest.fn().mockImplementation(() => Promise.resolve(mockContact));
 
       await createContact(req, res, next);
 
       expect(Contact.create).toHaveBeenCalledWith(contactData);
+      expect(res.status).toHaveBeenCalledWith(HTTP_STATUS.CREATED);
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-        statusCode: HTTP_STATUS.CREATED,
         message: 'Message sent successfully',
         data: { contact: mockContact }
       }));
@@ -66,7 +66,7 @@ describe('Contact Controller', () => {
       req.validatedData.body = contactData;
       
       const mockError = new Error('Creation failed');
-      Contact.create.mockRejectedValue(mockError);
+      Contact.create = jest.fn().mockImplementation(() => Promise.reject(mockError));
 
       await createContact(req, res, next);
 
@@ -98,11 +98,11 @@ describe('Contact Controller', () => {
         status: 'pending'
       };
 
-      Contact.countDocuments.mockResolvedValue(mockContacts.length);
-      Contact.find.mockReturnThis();
-      Contact.sort.mockReturnThis();
-      Contact.skip.mockReturnThis();
-      Contact.limit.mockResolvedValue(mockContacts);
+      Contact.countDocuments = jest.fn().mockImplementation(() => Promise.resolve(mockContacts.length));
+      Contact.find = jest.fn().mockReturnThis();
+      Contact.sort = jest.fn().mockReturnThis();
+      Contact.skip = jest.fn().mockReturnThis();
+      Contact.limit = jest.fn().mockImplementation(() => Promise.resolve(mockContacts));
 
       await getContacts(req, res, next);
 
@@ -136,7 +136,7 @@ describe('Contact Controller', () => {
         status: newStatus
       };
 
-      Contact.findByIdAndUpdate.mockResolvedValue(mockContact);
+      Contact.findByIdAndUpdate = jest.fn().mockImplementation(() => Promise.resolve(mockContact));
 
       await updateContactStatus(req, res, next);
 
@@ -158,7 +158,7 @@ describe('Contact Controller', () => {
       req.params = { id: contactId };
       req.validatedData.body = { status: newStatus };
 
-      Contact.findByIdAndUpdate.mockResolvedValue(null);
+      Contact.findByIdAndUpdate = jest.fn().mockImplementation(() => Promise.resolve(null));
 
       await updateContactStatus(req, res, next);
 

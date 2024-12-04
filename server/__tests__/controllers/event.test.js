@@ -23,7 +23,8 @@ describe('Event Controller', () => {
       files: [],
       validatedData: {
         body: {},
-        query: {}
+        query: {},
+        params: {}
       }
     };
     res = {
@@ -42,23 +43,23 @@ describe('Event Controller', () => {
       const eventData = {
         title: 'Test Event',
         description: 'Test Description',
-        date: new Date()
+        startDate: new Date(),
+        endDate: new Date(),
+        location: 'Test Location',
+        category: 'Test Category'
       };
       
-      req.body = eventData;
       req.validatedData.body = eventData;
+      req.files = [];
+
       const mockEvent = { ...eventData, _id: 'mockId', images: [] };
-      
-      Event.create.mockResolvedValue(mockEvent);
+      Event.create = jest.fn().mockImplementation(() => Promise.resolve(mockEvent));
 
       await createEvent(req, res, next);
 
-      expect(Event.create).toHaveBeenCalledWith({
-        ...eventData,
-        images: []
-      });
+      expect(Event.create).toHaveBeenCalledWith(expect.objectContaining(eventData));
+      expect(res.status).toHaveBeenCalledWith(HTTP_STATUS.CREATED);
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-        statusCode: HTTP_STATUS.CREATED,
         message: 'Event created successfully',
         data: { event: mockEvent }
       }));
@@ -68,43 +69,41 @@ describe('Event Controller', () => {
       const eventData = {
         title: 'Test Event',
         description: 'Test Description',
-        date: new Date()
+        startDate: new Date(),
+        endDate: new Date(),
+        location: 'Test Location',
+        category: 'Test Category'
       };
       
-      const mockFile1 = { filename: 'image1.jpg' };
-      const mockFile2 = { filename: 'image2.jpg' };
+      const mockFile1 = { buffer: Buffer.from('image1'), originalname: 'image1.jpg' };
+      const mockFile2 = { buffer: Buffer.from('image2'), originalname: 'image2.jpg' };
       
-      req.body = eventData;
       req.validatedData.body = eventData;
       req.files = [mockFile1, mockFile2];
-      
+
       const mockImageInfo1 = { url: 'url1', path: 'path1' };
       const mockImageInfo2 = { url: 'url2', path: 'path2' };
-      
-      imageService.processImage.mockResolvedValueOnce(mockImageInfo1);
-      imageService.processImage.mockResolvedValueOnce(mockImageInfo2);
-      
+
+      imageService.processImage = jest.fn()
+        .mockImplementationOnce(() => Promise.resolve(mockImageInfo1))
+        .mockImplementationOnce(() => Promise.resolve(mockImageInfo2));
+
       const mockEvent = { 
         ...eventData, 
         _id: 'mockId', 
         images: [mockImageInfo1, mockImageInfo2] 
       };
-      
-      Event.create.mockResolvedValue(mockEvent);
+      Event.create = jest.fn().mockImplementation(() => Promise.resolve(mockEvent));
 
       await createEvent(req, res, next);
 
       expect(imageService.processImage).toHaveBeenCalledTimes(2);
-      expect(imageService.processImage).toHaveBeenCalledWith(mockFile1);
-      expect(imageService.processImage).toHaveBeenCalledWith(mockFile2);
-      
-      expect(Event.create).toHaveBeenCalledWith({
+      expect(Event.create).toHaveBeenCalledWith(expect.objectContaining({
         ...eventData,
         images: [mockImageInfo1, mockImageInfo2]
-      });
-      
+      }));
+      expect(res.status).toHaveBeenCalledWith(HTTP_STATUS.CREATED);
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-        statusCode: HTTP_STATUS.CREATED,
         message: 'Event created successfully',
         data: { event: mockEvent }
       }));
@@ -114,25 +113,31 @@ describe('Event Controller', () => {
       const eventData = {
         title: 'Test Event',
         description: 'Test Description',
-        date: new Date()
+        startDate: new Date(),
+        endDate: new Date(),
+        location: 'Test Location',
+        category: 'Test Category'
       };
       
-      const mockFile1 = { filename: 'image1.jpg' };
-      const mockFile2 = { filename: 'image2.jpg' };
+      const mockFile1 = { buffer: Buffer.from('image1'), originalname: 'image1.jpg' };
+      const mockFile2 = { buffer: Buffer.from('image2'), originalname: 'image2.jpg' };
       
-      req.body = eventData;
       req.validatedData.body = eventData;
       req.files = [mockFile1, mockFile2];
-      
+
       const mockError = new Error('Image processing failed');
-      
-      imageService.processImage.mockRejectedValueOnce(mockError);
-      
-      imageService.deleteImage.mockResolvedValue(null);
+
+      const mockImageInfo1 = { url: 'url1', path: 'path1' };
+
+      imageService.processImage = jest.fn()
+        .mockImplementationOnce(() => Promise.resolve(mockImageInfo1))
+        .mockImplementationOnce(() => Promise.reject(mockError));
+
+      imageService.deleteImage = jest.fn().mockImplementation(() => Promise.resolve(null));
 
       await createEvent(req, res, next);
 
-      expect(imageService.processImage).toHaveBeenCalledWith(mockFile1);
+      expect(imageService.processImage).toHaveBeenCalledTimes(2);
       expect(imageService.deleteImage).toHaveBeenCalledWith(mockFile1);
       expect(imageService.deleteImage).toHaveBeenCalledWith(mockFile2);
       expect(next).toHaveBeenCalledWith(mockError);
@@ -151,8 +156,8 @@ describe('Event Controller', () => {
       };
       
       const mockEvents = [
-        { _id: 'event1', title: 'Test Event 1', category: 'conference', date: new Date('2023-06-15') },
-        { _id: 'event2', title: 'Test Event 2', category: 'conference', date: new Date('2023-07-20') }
+        { _id: 'event1', title: 'Test Event 1', category: 'conference' },
+        { _id: 'event2', title: 'Test Event 2', category: 'conference' }
       ];
 
       const mockQuery = {
@@ -167,10 +172,12 @@ describe('Event Controller', () => {
         }
       };
 
-      Event.countDocuments.mockResolvedValue(mockEvents.length);
-      Event.find.mockReturnThis();
-      Event.skip.mockReturnThis();
-      Event.limit.mockResolvedValue(mockEvents);
+      Event.countDocuments = jest.fn().mockResolvedValue(mockEvents.length);
+      Event.find = jest.fn().mockReturnThis();
+      Event.sort = jest.fn().mockReturnThis();
+      Event.select = jest.fn().mockReturnThis();
+      Event.skip = jest.fn().mockReturnThis();
+      Event.limit = jest.fn().mockResolvedValue(mockEvents);
 
       await getEvents(req, res, next);
 
@@ -191,17 +198,17 @@ describe('Event Controller', () => {
 
   describe('getEvent', () => {
     it('should retrieve a single event by ID', async () => {
-      const eventId = 'mockId';
-      
-      req.params = { id: eventId };
-      
+      const eventId = 'mockEventId';
+      req.validatedData.params = { id: eventId };
+
       const mockEvent = {
         _id: eventId,
         title: 'Test Event',
-        description: 'Test Description'
+        description: 'Test Description',
+        images: [{ url: 'url1' }, { url: 'url2' }]
       };
 
-      Event.findById.mockResolvedValue(mockEvent);
+      Event.findById = jest.fn().mockResolvedValue(mockEvent);
 
       await getEvent(req, res, next);
 
@@ -212,11 +219,10 @@ describe('Event Controller', () => {
     });
 
     it('should handle event not found', async () => {
-      const eventId = 'nonexistentId';
-      
-      req.params = { id: eventId };
+      const eventId = 'mockEventId';
+      req.validatedData.params = { id: eventId };
 
-      Event.findById.mockResolvedValue(null);
+      Event.findById = jest.fn().mockResolvedValue(null);
 
       await getEvent(req, res, next);
 
@@ -227,96 +233,95 @@ describe('Event Controller', () => {
 
   describe('updateEvent', () => {
     it('should update an event successfully', async () => {
-      const eventId = 'mockId';
+      const eventId = 'mockEventId';
       const updateData = {
-        title: 'Updated Event Title',
+        title: 'Updated Event',
         description: 'Updated Description'
       };
       
-      req.params = { id: eventId };
+      req.validatedData.params = { id: eventId };
       req.validatedData.body = updateData;
-      
-      const mockUpdatedEvent = {
+      req.files = [];
+
+      const existingEvent = {
         _id: eventId,
-        ...updateData
+        title: 'Original Event',
+        description: 'Original Description',
+        images: [],
+        save: jest.fn().mockResolvedValue(true)
       };
 
-      Event.findByIdAndUpdate.mockResolvedValue(mockUpdatedEvent);
+      Event.findById = jest.fn().mockResolvedValue(existingEvent);
 
       await updateEvent(req, res, next);
 
-      expect(Event.findByIdAndUpdate).toHaveBeenCalledWith(
-        eventId, 
-        updateData, 
-        { new: true, runValidators: true }
-      );
+      expect(Event.findById).toHaveBeenCalledWith(eventId);
+      expect(existingEvent.save).toHaveBeenCalled();
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
         message: 'Event updated successfully',
-        data: { event: mockUpdatedEvent }
+        data: { event: expect.objectContaining(updateData) }
       }));
     });
 
     it('should handle event not found during update', async () => {
-      const eventId = 'nonexistentId';
+      const eventId = 'mockEventId';
       const updateData = {
-        title: 'Updated Event Title'
+        title: 'Updated Event',
+        description: 'Updated Description'
       };
       
-      req.params = { id: eventId };
+      req.validatedData.params = { id: eventId };
       req.validatedData.body = updateData;
+      req.files = [];
 
-      Event.findByIdAndUpdate.mockResolvedValue(null);
+      Event.findById = jest.fn().mockResolvedValue(null);
 
       await updateEvent(req, res, next);
 
-      expect(Event.findByIdAndUpdate).toHaveBeenCalledWith(
-        eventId, 
-        updateData, 
-        { new: true, runValidators: true }
-      );
+      expect(Event.findById).toHaveBeenCalledWith(eventId);
       expect(next).toHaveBeenCalledWith(expect.any(Error));
     });
   });
 
   describe('deleteEvent', () => {
     it('should delete an event and its images', async () => {
-      const eventId = 'mockId';
+      const eventId = 'mockEventId';
       const mockEvent = {
         _id: eventId,
-        title: 'Test Event',
         images: [
-          { url: 'url1', path: 'path1' },
-          { url: 'url2', path: 'path2' }
-        ]
+          { path: 'path1' },
+          { path: 'path2' }
+        ],
+        remove: jest.fn().mockResolvedValue(true)
       };
 
-      req.params = { id: eventId };
+      req.validatedData.params = { id: eventId };
 
-      Event.findByIdAndDelete.mockResolvedValue(mockEvent);
-      imageService.deleteImage.mockResolvedValue(null);
+      Event.findById = jest.fn().mockResolvedValue(mockEvent);
+      imageService.deleteImage = jest.fn().mockResolvedValue(true);
 
       await deleteEvent(req, res, next);
 
-      expect(Event.findByIdAndDelete).toHaveBeenCalledWith(eventId);
+      expect(Event.findById).toHaveBeenCalledWith(eventId);
       expect(imageService.deleteImage).toHaveBeenCalledTimes(2);
       expect(imageService.deleteImage).toHaveBeenCalledWith(mockEvent.images[0]);
       expect(imageService.deleteImage).toHaveBeenCalledWith(mockEvent.images[1]);
+      expect(mockEvent.remove).toHaveBeenCalled();
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-        message: 'Event deleted successfully',
-        data: { event: mockEvent }
+        message: 'Event deleted successfully'
       }));
     });
 
     it('should handle event not found during deletion', async () => {
-      const eventId = 'nonexistentId';
+      const eventId = 'mockEventId';
+      
+      req.validatedData.params = { id: eventId };
 
-      req.params = { id: eventId };
-
-      Event.findByIdAndDelete.mockResolvedValue(null);
+      Event.findById = jest.fn().mockResolvedValue(null);
 
       await deleteEvent(req, res, next);
 
-      expect(Event.findByIdAndDelete).toHaveBeenCalledWith(eventId);
+      expect(Event.findById).toHaveBeenCalledWith(eventId);
       expect(next).toHaveBeenCalledWith(expect.any(Error));
     });
   });

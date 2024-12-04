@@ -24,6 +24,15 @@ export const getUsers = async (req, res, next) => {
       .skip((page - 1) * limit)
       .limit(limit);
     
+    console.log('Calling sendResponse with data:', {
+      users,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(totalUsers / limit),
+        totalUsers
+      }
+    });
+
     sendResponse(res, {
       data: { 
         users,
@@ -41,6 +50,9 @@ export const getUsers = async (req, res, next) => {
 
 export const getAdmins = async (req, res, next) => {
   try {
+    console.log('getAdmins controller called');
+    console.log('Request query:', req.validatedData.query);
+    
     const { page = 1, limit = 10, search } = req.validatedData.query || {};
 
     const query = { role: 'admin' };
@@ -51,13 +63,21 @@ export const getAdmins = async (req, res, next) => {
       ];
     }
 
+    console.log('Query to find admins:', query);
+
     const totalAdmins = await User.countDocuments(query);
+    console.log('Total admins count:', totalAdmins);
+
     const admins = await User.find(query)
       .select('-password')
       .skip((page - 1) * limit)
       .limit(limit);
     
+    console.log('Found admins:', admins);
+
+    console.log('Calling sendResponse');
     sendResponse(res, {
+      statusCode: HTTP_STATUS.OK,
       data: { 
         admins,
         pagination: {
@@ -67,7 +87,9 @@ export const getAdmins = async (req, res, next) => {
         }
       }
     });
+    console.log('sendResponse called successfully');
   } catch (error) {
+    console.error('Error in getAdmins:', error);
     next(error);
   }
 };

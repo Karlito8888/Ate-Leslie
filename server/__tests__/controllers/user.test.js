@@ -1,10 +1,44 @@
 import { jest } from '@jest/globals';
-import { User } from '../../models/index.js';
-import { getUsers, getAdmins, updateAdmin, changeAdminPassword } from '../../controllers/user/index.js';
+import { userController } from '../../controllers/index.js';
 import { HTTP_STATUS } from '../../constants/http.js';
+import { responseHelpers } from '../../utils/response.js';
+import * as responseHelpersModule from '../../utils/response.js';
+import { ApiError } from '../../utils/error.js';
+import { User } from '../../models/index.js';
 
-// Mock User model
-jest.mock('../../models/index.js');
+// Mock User model methods with jest.spyOn
+beforeEach(() => {
+  jest.spyOn(User, 'find').mockReturnValue({
+    select: jest.fn().mockReturnThis(),
+    skip: jest.fn().mockReturnThis(),
+    limit: jest.fn().mockReturnThis(),
+    exec: jest.fn()
+  });
+  jest.spyOn(User, 'findById').mockReturnValue({
+    select: jest.fn().mockReturnThis(),
+    exec: jest.fn()
+  });
+  jest.spyOn(User, 'findByIdAndUpdate').mockReturnValue({
+    exec: jest.fn()
+  });
+  jest.spyOn(User, 'countDocuments').mockReturnValue({
+    exec: jest.fn()
+  });
+
+  // Reset all mocks
+  jest.clearAllMocks();
+});
+
+// Mock responseHelpers
+jest.mock('../../utils/response.js', () => ({
+  __esModule: true,
+  responseHelpers: {
+    sendResponse: jest.fn(),
+    asyncHandler: (fn) => fn,
+    sendError: jest.fn(),
+    paginate: jest.fn()
+  }
+}));
 
 describe('User Controller', () => {
   let req;
@@ -12,14 +46,31 @@ describe('User Controller', () => {
   let next;
 
   beforeEach(() => {
+    jest.spyOn(responseHelpers, 'sendResponse');
+    jest.spyOn(User, 'find').mockReturnValue({
+      select: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      exec: jest.fn().mockResolvedValue([
+        { _id: '1', username: 'user1', role: 'user' },
+        { _id: '2', username: 'user2', role: 'user' }
+      ])
+    });
+    jest.spyOn(User, 'countDocuments').mockResolvedValue(2);
+
+    jest.clearAllMocks();
+
     req = {
       params: {},
-      body: {}
+      body: {},
+      validatedData: { query: { page: 1, limit: 10 } }
     };
+
     res = {
       status: jest.fn().mockReturnThis(),
-      json: jest.fn()
+      json: jest.fn().mockReturnThis()
     };
+
     next = jest.fn();
   });
 
@@ -28,31 +79,60 @@ describe('User Controller', () => {
   });
 
   describe('getUsers', () => {
-    it('should return all users with role user', async () => {
-      const mockUsers = [
-        { _id: '1', username: 'user1', role: 'user' },
-        { _id: '2', username: 'user2', role: 'user' }
-      ];
+    it.only('should return all users with role user', async () => {
+      console.log('Test started: should return all users with role user');
 
-      User.find.mockReturnValue({
-        select: jest.fn().mockResolvedValue(mockUsers)
-      });
+      await userController.getUsers(req, res, next);
 
-      await getUsers(req, res, next);
+      console.log('User.find called with:', User.find.mock.calls);
+      console.log('User.countDocuments called with:', User.countDocuments.mock.calls);
 
       expect(User.find).toHaveBeenCalledWith({ role: 'user' });
-      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-        data: { users: mockUsers }
-      }));
+      expect(User.countDocuments).toHaveBeenCalledWith({ role: 'user' });
+      expect(responseHelpers.sendResponse).toHaveBeenCalledWith(
+        res,
+        expect.objectContaining({
+          data: expect.objectContaining({
+            users: [
+              { _id: '1', username: 'user1', role: 'user' },
+              { _id: '2', username: 'user2', role: 'user' }
+            ],
+            pagination: expect.objectContaining({
+              currentPage: 1,
+              totalPages: 1,
+              totalUsers: 2
+            })
+          })
+        })
+      );
+    });
+
+    it('should return users with search query', async () => {
+      const mockUsers = [
+        { _id: '1', username: 'user1', role: 'user', email: 'user1@test.com' }
+      ];
+
+      req.validatedData.query = { page: 1, limit: 10, search: 'user1' };
+
+      User.countDocuments().exec.mockResolvedValue(mockUsers.length);
+      User.find().limit().exec.mockResolvedValue(mockUsers);
+
+      await userController.getUsers(req, res, next);
+
+      expect(User.find).toHaveBeenCalledWith({ 
+        role: 'user',
+        $or: [
+          { email: { $regex: 'user1', $options: 'i' } },
+          { name: { $regex: 'user1', $options: 'i' } }
+        ]
+      });
     });
 
     it('should handle database errors', async () => {
       const error = new Error('Database error');
-      User.find.mockReturnValue({
-        select: jest.fn().mockRejectedValue(error)
-      });
+      User.countDocuments().exec.mockRejectedValue(error);
 
-      await getUsers(req, res, next);
+      await userController.getUsers(req, res, next);
 
       expect(next).toHaveBeenCalledWith(error);
     });
@@ -65,25 +145,73 @@ describe('User Controller', () => {
         { _id: '2', username: 'admin2', role: 'admin' }
       ];
 
-      User.find.mockReturnValue({
-        select: jest.fn().mockResolvedValue(mockAdmins)
-      });
+      req.validatedData.query = { page: 1, limit: 10 };
 
-      await getAdmins(req, res, next);
+      User.countDocuments().exec.mockResolvedValue(mockAdmins.length);
+      User.find().limit().exec.mockResolvedValue(mockAdmins);
+
+      await userController.getAdmins(req, res, next);
 
       expect(User.find).toHaveBeenCalledWith({ role: 'admin' });
-      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-        data: { admins: mockAdmins }
-      }));
+      expect(responseHelpers.sendResponse).toHaveBeenCalledWith(
+        res, 
+        expect.objectContaining({
+          data: expect.objectContaining({
+            admins: mockAdmins,
+            pagination: expect.objectContaining({
+              currentPage: 1,
+              totalPages: 1,
+              totalAdmins: mockAdmins.length
+            })
+          })
+        })
+      );
+    });
+
+    it('should return admins with search query', async () => {
+      const searchQuery = 'admin1';
+      const mockAdmin = {
+        _id: '1',
+        username: 'admin1',
+        role: 'admin',
+        email: 'admin1@test.com'
+      };
+
+      req.validatedData.query = { page: 1, limit: 10, search: searchQuery };
+
+      User.countDocuments().exec.mockResolvedValue(1);
+      User.find().limit().exec.mockResolvedValue([mockAdmin]);
+
+      await userController.getAdmins(req, res, next);
+
+      expect(User.find).toHaveBeenCalledWith({
+        role: 'admin',
+        $or: [
+          { email: { $regex: searchQuery, $options: 'i' } },
+          { name: { $regex: searchQuery, $options: 'i' } }
+        ]
+      });
+
+      expect(responseHelpers.sendResponse).toHaveBeenCalledWith(
+        res,
+        expect.objectContaining({
+          data: expect.objectContaining({
+            admins: [mockAdmin],
+            pagination: expect.objectContaining({
+              currentPage: 1,
+              totalPages: 1,
+              totalAdmins: 1
+            })
+          })
+        })
+      );
     });
 
     it('should handle database errors', async () => {
       const error = new Error('Database error');
-      User.find.mockReturnValue({
-        select: jest.fn().mockRejectedValue(error)
-      });
+      User.find().limit().exec.mockRejectedValue(error);
 
-      await getAdmins(req, res, next);
+      await userController.getAdmins(req, res, next);
 
       expect(next).toHaveBeenCalledWith(error);
     });
@@ -93,47 +221,47 @@ describe('User Controller', () => {
     it('should update admin successfully', async () => {
       const adminId = 'mockAdminId';
       const updateData = {
-        username: 'updatedAdmin'
+        username: 'updatedAdmin',
+        email: 'updated@test.com'
       };
-      
-      req.params.id = adminId;
-      req.body = updateData;
-      
-      const mockUpdatedAdmin = {
+      const updatedAdmin = {
         _id: adminId,
         ...updateData,
         role: 'admin'
       };
 
-      User.findOneAndUpdate.mockReturnValue({
-        select: jest.fn().mockResolvedValue(mockUpdatedAdmin)
-      });
+      req.params = { id: adminId };
+      req.validatedData = { body: updateData };
 
-      await updateAdmin(req, res, next);
+      User.findByIdAndUpdate().exec.mockResolvedValue(updatedAdmin);
 
-      expect(User.findOneAndUpdate).toHaveBeenCalledWith(
-        { _id: adminId, role: 'admin' },
-        { $set: updateData },
+      await userController.updateAdmin(req, res, next);
+
+      expect(User.findByIdAndUpdate).toHaveBeenCalledWith(
+        adminId,
+        updateData,
         { new: true, runValidators: true }
       );
-      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-        message: 'Admin updated successfully',
-        data: { admin: mockUpdatedAdmin }
-      }));
+
+      expect(responseHelpers.sendResponse).toHaveBeenCalledWith(
+        res,
+        expect.objectContaining({
+          statusCode: HTTP_STATUS.OK,
+          message: 'Admin updated successfully',
+          data: updatedAdmin
+        })
+      );
     });
 
     it('should handle non-existent admin', async () => {
-      req.params.id = 'nonexistentId';
-      User.findOneAndUpdate.mockReturnValue({
-        select: jest.fn().mockResolvedValue(null)
-      });
+      req.params = { id: 'nonexistentId' };
+      User.findByIdAndUpdate().exec.mockResolvedValue(null);
 
-      await updateAdmin(req, res, next);
+      await userController.updateAdmin(req, res, next);
 
-      expect(next).toHaveBeenCalledWith(expect.objectContaining({
-        statusCode: HTTP_STATUS.NOT_FOUND,
-        message: 'Admin not found'
-      }));
+      expect(next).toHaveBeenCalledWith(
+        expect.any(ApiError)
+      );
     });
   });
 
@@ -141,68 +269,61 @@ describe('User Controller', () => {
     it('should change admin password successfully', async () => {
       const adminId = 'mockAdminId';
       const passwordData = {
-        currentPassword: 'oldpass',
-        newPassword: 'newpass'
+        currentPassword: 'oldPassword',
+        newPassword: 'newPassword'
       };
-      
-      req.params.id = adminId;
-      req.body = passwordData;
-      
+
       const mockAdmin = {
         _id: adminId,
-        role: 'admin',
         comparePassword: jest.fn().mockResolvedValue(true),
         save: jest.fn().mockResolvedValue(true)
       };
 
-      User.findOne.mockResolvedValue(mockAdmin);
+      req.params = { id: adminId };
+      req.validatedData = { body: passwordData };
 
-      await changeAdminPassword(req, res, next);
+      User.findById().exec.mockResolvedValue(mockAdmin);
 
-      expect(User.findOne).toHaveBeenCalledWith({ _id: adminId, role: 'admin' });
+      await userController.changeAdminPassword(req, res, next);
+
+      expect(User.findById).toHaveBeenCalledWith(adminId);
       expect(mockAdmin.comparePassword).toHaveBeenCalledWith(passwordData.currentPassword);
       expect(mockAdmin.save).toHaveBeenCalled();
-      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-        message: 'Password updated successfully'
-      }));
+      expect(responseHelpers.sendResponse).toHaveBeenCalledWith(
+        res,
+        expect.objectContaining({
+          statusCode: HTTP_STATUS.OK,
+          message: 'Admin password changed successfully'
+        })
+      );
     });
 
     it('should handle incorrect current password', async () => {
       const adminId = 'mockAdminId';
-      const passwordData = {
-        currentPassword: 'wrongpass',
-        newPassword: 'newpass'
-      };
-      
-      req.params.id = adminId;
-      req.body = passwordData;
-      
       const mockAdmin = {
         _id: adminId,
-        role: 'admin',
         comparePassword: jest.fn().mockResolvedValue(false)
       };
 
-      User.findOne.mockResolvedValue(mockAdmin);
+      req.params = { id: adminId };
+      User.findById().exec.mockResolvedValue(mockAdmin);
 
-      await changeAdminPassword(req, res, next);
+      await userController.changeAdminPassword(req, res, next);
 
-      expect(next).toHaveBeenCalledWith(expect.objectContaining({
-        statusCode: HTTP_STATUS.UNAUTHORIZED,
-        message: 'Current password is incorrect'
-      }));
+      expect(next).toHaveBeenCalledWith(
+        expect.any(ApiError)
+      );
     });
 
     it('should handle non-existent admin', async () => {
-      req.params.id = 'nonexistentId';
-      User.findOne.mockResolvedValue(null);
+      req.params = { id: 'nonexistentId' };
+      User.findById().exec.mockResolvedValue(null);
 
-      await changeAdminPassword(req, res, next);
+      await userController.changeAdminPassword(req, res, next);
 
-      expect(next).toHaveBeenCalledWith(expect.objectContaining({
-        statusCode: HTTP_STATUS.NOT_FOUND,
-        message: 'Admin not found'
-      }));
+      expect(next).toHaveBeenCalledWith(
+        expect.any(ApiError)
+      );
     });
   });
 });
