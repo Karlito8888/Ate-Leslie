@@ -1,0 +1,92 @@
+@use '../../styles/globals/variables' as *;
+@use '../../styles/globals/mixins' as *;
+
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba($color-black, 0.95);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.5s ease-in-out;
+
+  &.visible {
+    opacity: 1;
+
+    .modalContent {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+}
+
+.modalContent {
+  background-color: rgba($color-white, 0.1);
+  backdrop-filter: blur(10px);
+  padding: $spacing-8;
+  border-radius: $border-radius-lg;
+  border: 1px solid rgba($color-white, 0.1);
+  max-width: 90%;
+  width: 500px;
+  text-align: center;
+  transform: translateY(20px);
+  opacity: 0;
+  transition: all 0.5s ease-in-out;
+}
+
+.loadingContent {
+  .title {
+    color: $color-white;
+    font-size: $font-size-3xl;
+    margin-bottom: $spacing-6;
+    font-weight: 600;
+    text-shadow: 0 2px 4px rgba($color-black, 0.1);
+  }
+}
+
+.spinnerContainer {
+  margin: $spacing-8 auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.spinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.loadingText {
+  color: $color-white;
+  font-size: $font-size-lg;
+  margin-top: $spacing-4;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2px;
+
+  .dot {
+    @for $i from 1 through 3 {
+      &:nth-child(#{$i + 1}) {
+        animation: dotFade 1.5s #{$i * 0.2}s infinite;
+      }
+    }
+  }
+}
+
+@keyframes dotFade {
+  0%, 100% {
+    opacity: 0.2;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}

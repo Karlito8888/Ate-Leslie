@@ -1,14 +1,14 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import '../../styles/components/_alert.scss';
+import styles from './Alert.module.scss';
 
 const Alert = ({ type, message, onClose }) => {
   return (
-    <div className={`alert alert--${type}`} role="alert">
-      <span className="alert__content">{message}</span>
+    <div className={`${styles.alert} ${styles[`alert--${type}`]}`} role="alert">
+      <span className={styles.alert__content}>{message}</span>
       {onClose && (
         <span
-          className="alert__close"
+          className={styles.alert__close}
           onClick={onClose}
         >
           <svg

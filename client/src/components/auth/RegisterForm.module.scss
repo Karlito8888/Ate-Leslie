@@ -1,0 +1,76 @@
+@use '../../styles/globals/variables' as *;
+
+.register {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: $color-gray-50;
+  padding: $spacing-8 $spacing-4;
+
+  &__container {
+    max-width: 28rem;
+    width: 100%;
+  }
+
+  &__header {
+    margin-bottom: $spacing-8;
+    text-align: center;
+
+    h2 {
+      font-size: $font-size-3xl;
+      font-weight: 800;
+      color: $color-gray-900;
+    }
+  }
+
+  &__form {
+    background-color: $color-white;
+    padding: $spacing-8;
+    border-radius: $border-radius-lg;
+    box-shadow: $shadow;
+  }
+
+  &__field {
+    margin-bottom: $spacing-4;
+
+    label {
+      display: block;
+      margin-bottom: $spacing-2;
+      font-weight: 500;
+      color: $color-gray-700;
+    }
+
+    input {
+      width: 100%;
+      padding: $spacing-3;
+      border: 1px solid $color-gray-300;
+      border-radius: $border-radius;
+      font-size: $font-size-sm;
+      
+      &:focus {
+        outline: none;
+        border-color: $color-primary;
+        box-shadow: 0 0 0 1px $color-primary;
+      }
+    }
+  }
+
+  &__submit {
+    width: 100%;
+    padding: $spacing-3;
+    background-color: $color-primary;
+    color: $color-white;
+    border-radius: $border-radius;
+    font-weight: 500;
+    
+    &:hover {
+      background-color: $color-primary-dark;
+    }
+    
+    &:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+  }
+}

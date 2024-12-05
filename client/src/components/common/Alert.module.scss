@@ -1,0 +1,51 @@
+@use '../../styles/globals/variables' as *;
+
+.alert {
+  padding: $spacing-4;
+  margin-bottom: $spacing-4;
+  border: 1px solid transparent;
+  border-radius: $border-radius;
+  position: relative;
+
+  &__content {
+    display: block;
+  }
+
+  &__close {
+    position: absolute;
+    top: 50%;
+    right: $spacing-4;
+    transform: translateY(-50%);
+    cursor: pointer;
+    
+    svg {
+      width: 1.5rem;
+      height: 1.5rem;
+    }
+  }
+
+  // Alert types
+  &--error {
+    background-color: $color-error-bg;
+    border-color: $color-error-border;
+    color: $color-error-text;
+  }
+
+  &--success {
+    background-color: $color-success-bg;
+    border-color: $color-success-border;
+    color: $color-success-text;
+  }
+
+  &--warning {
+    background-color: $color-warning-bg;
+    border-color: $color-warning-border;
+    color: $color-warning-text;
+  }
+
+  &--info {
+    background-color: $color-info-bg;
+    border-color: $color-info-border;
+    color: $color-info-text;
+  }
+}

@@ -1,9 +1,53 @@
-@use "abstracts/variables" as *;
-@use "abstracts/mixins" as *;
-
-/* Components */
-@use "components/alert";
-@use "components/register-form";
+@use "globals/variables" as variables;
+@use "globals/mixins" as mixins;
 
 /* Base */
 @use "base/reset";
+
+/* Styles globaux */
+html {
+  font-size: variables.$font-size-base;
+}
+
+body {
+  font-family: variables.$font-family-base;
+  color: variables.$color-gray-900;
+  background-color: variables.$color-white;
+  height: 100%;
+  width: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Utilitaires globaux */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+/* Styles de base pour les liens */
+a {
+  color: variables.$color-primary;
+  text-decoration: none;
+  @include mixins.transition(color);
+
+  &:hover {
+    color: variables.$color-primary-dark;
+  }
+}
+
+/* Styles de base pour les boutons */
+button {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  margin: 0;
+}

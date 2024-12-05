@@ -1,0 +1,77 @@
+.navigationAside {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  transition: width 0.3s ease-in-out;
+  z-index: 90;
+
+  &.animate {
+    animation: slideInFromLeft 5s ease-in-out;
+  }
+
+  &.collapsed {
+    width: 50px;
+
+    .navigation {
+      opacity: 0;
+      visibility: hidden;
+    }
+  }
+
+  &.expanded {
+    width: 250px;
+
+    .navigation {
+      opacity: 1;
+      visibility: visible;
+    }
+  }
+}
+
+.toggleButton {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  font-size: 20px;
+  font-weight: bold;
+  z-index: 2;
+}
+
+.navigation {
+  padding: 20px;
+  transition: opacity 0.3s ease-in-out;
+
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+
+    li {
+      margin: 15px 0;
+      cursor: pointer;
+
+      &:hover {
+        color: #ddd;
+      }
+    }
+  }
+}
+
+@keyframes slideInFromLeft {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}

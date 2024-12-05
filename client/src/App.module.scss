@@ -1,0 +1,15 @@
+.app {
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.mainContent {
+  padding: 80px 20px 20px 70px; // Espace pour le header et le menu
+  min-height: calc(100vh - 80px); // Hauteur totale moins le header
+  transition: padding-left 0.3s ease-in-out;
+  
+  &.menuExpanded {
+    padding-left: 270px;
+  }
+}

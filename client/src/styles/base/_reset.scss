@@ -1,4 +1,4 @@
-@use '../abstracts/variables' as *;
+@use '../globals/variables' as *;
 
 /* Reset de base */
 *, *::before, *::after {
@@ -7,40 +7,39 @@
   box-sizing: border-box;
 }
 
+/* Accessibilité et comportement de base */
 html {
-  font-size: $font-size-base;
   scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
 }
 
+/* Elements de base */
 body {
-  font-family: $font-family-base;
+  min-height: 100vh;
   line-height: 1.5;
-  color: $color-gray-900;
-  background-color: $color-white;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-img {
-  max-width: 100%;
-  height: auto;
-  display: block;
+/* Reset des éléments interactifs */
+button, input, optgroup, select, textarea {
+  font: inherit;
+  margin: 0;
+  padding: 0;
 }
 
 a {
-  color: inherit;
   text-decoration: none;
+  color: inherit;
 }
 
-button {
-  border: none;
-  background: none;
-  font: inherit;
-  cursor: pointer;
-}
-
-input, button, textarea, select {
-  font: inherit;
-}
-
-ul, ol {
+/* Reset des listes */
+ol, ul {
   list-style: none;
+}
+
+/* Reset des images */
+img, picture, video, canvas, svg {
+  display: block;
+  max-width: 100%;
 }
