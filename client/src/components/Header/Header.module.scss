@@ -3,9 +3,10 @@
   top: 0;
   left: 50px;
   right: 0;
-  height: 60px;
+  height: clamp(2.5rem, 0.9375rem + 5vw, 3.75rem);
   z-index: 100;
-  padding: 0 20px;
+  padding-block: 0;
+  padding-inline: clamp(0.625rem, -0.1563rem + 2.5vw, 1.25rem);
   display: flex;
   align-items: center;
   justify-content: space-between;

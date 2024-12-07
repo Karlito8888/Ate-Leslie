@@ -5,8 +5,12 @@
 }
 
 .mainContent {
-  padding: 80px 20px 20px 70px; // Espace pour le header et le menu
-  min-height: calc(100vh - 80px); // Hauteur totale moins le header
+  // padding: 70px 20px 20px 70px;
+  padding-top: clamp(3.75rem, 2.9688rem + 2.5vw, 4.375rem);
+  padding-right: clamp(0.625rem, -0.1563rem + 2.5vw, 1.25rem);
+  padding-bottom: 20px;
+  padding-left: clamp(3.75rem, 2.9688rem + 2.5vw, 4.375rem);
+  min-height: 100vh;
   transition: padding-left 0.3s ease-in-out;
   
   &.menuExpanded {

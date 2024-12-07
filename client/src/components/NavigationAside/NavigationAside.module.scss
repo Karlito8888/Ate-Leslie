@@ -1,77 +1,136 @@
+@use "../../styles/globals/variables" as *;
+
 .navigationAside {
   position: fixed;
   top: 0;
   left: 0;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.9);
-  color: white;
+  background: linear-gradient(
+    to right,
+    $color-primary 0%,
+    $color-primary 2px,
+    $color-black 5px,
+    $color-black 100%
+  );
+  color: $color-white;
   transition: width 0.3s ease-in-out;
-  z-index: 90;
+  z-index: 110;
+  width: 50px;
+  letter-spacing: 2px;
 
   &.animate {
-    animation: slideInFromLeft 5s ease-in-out;
+    animation: slideInFromLeft 5s ease-in-out 2s;
+    opacity: 0;
+    animation-fill-mode: forwards;
   }
 
-  &.collapsed {
-    width: 50px;
+  .navigation {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 20px 15px;
 
-    .navigation {
-      opacity: 0;
-      visibility: hidden;
+    .mainNav, .authNav {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+
+      li {
+        margin: 15px 0;
+        
+        a {
+          color: inherit;
+          text-decoration: none;
+          display: flex;
+          align-items: center;
+          padding: 5px 0;
+          transition: all 0.3s ease-in-out;
+          
+          .iconWrapper {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            
+            .icon {
+              font-size: 1.2em;
+            }
+          }
+
+          .linkText {
+            opacity: 0;
+            max-width: 0;
+            overflow: hidden;
+            white-space: nowrap;
+            margin-left: 10px;
+            transition: all 0.3s ease-in-out;
+          }
+          
+          &:hover, &.activeLink {
+            color: $color-primary;
+          }
+        }
+      }
+    }
+
+    .authNav {
+      margin-top: auto;
+      padding-top: 20px;
+      border-top: 1px solid rgba($color-white, 0.1);
     }
   }
 
-  &.expanded {
+  &:hover {
     width: 250px;
 
     .navigation {
-      opacity: 1;
-      visibility: visible;
-    }
-  }
-}
-
-.toggleButton {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  cursor: pointer;
-  font-size: 20px;
-  font-weight: bold;
-  z-index: 2;
-}
-
-.navigation {
-  padding: 20px;
-  transition: opacity 0.3s ease-in-out;
-
-  ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-
-    li {
-      margin: 15px 0;
-      cursor: pointer;
-
-      &:hover {
-        color: #ddd;
+      .mainNav, .authNav {
+        li a .linkText {
+          opacity: 1;
+          max-width: 200px;
+        }
       }
     }
   }
-}
 
-@keyframes slideInFromLeft {
-  0% {
-    transform: translateX(-100%);
-    opacity: 0;
+  .toggleButton {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    font-size: 20px;
+    font-weight: bold;
+    z-index: 2;
   }
-  20% {
-    opacity: 1;
-  }
-  100% {
-    transform: translateX(0);
-    opacity: 1;
+
+  @keyframes slideInFromLeft {
+    0% {
+      transform: translateX(-100%);
+      opacity: 0;
+    }
+    20% {
+      transform: translateX(10%);
+      opacity: 1;
+    }
+    25% {
+      transform: translateX(0%);
+    }
+    30% {
+      transform: translateX(5%);
+    }
+    35% {
+      transform: translateX(0%);
+    }
+    40% {
+      transform: translateX(2%);
+    }
+    45%, 100% {
+      transform: translateX(0);
+      opacity: 1;
+    }
   }
 }

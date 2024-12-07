@@ -24,7 +24,9 @@ const LoadingModal = () => {
     >
       <div className={styles.modalContent}>
         <div className={styles.loadingContent}>
-          <h2 className={styles.title}>Welcome to Ate-Leslie</h2>
+          <h2 className={styles.title}>
+            Welcome<br />to<br />Ate Leslie's Project
+          </h2>
           <div className={styles.spinnerContainer}>
             <MutatingDots
               visible={true}
