@@ -147,7 +147,7 @@ const RegisterForm = () => {
         </button>
 
         <p className={styles.loginLink}>
-          Already have an account?{' '}
+          Already have an account ?{' '}
           <span onClick={() => navigate('/auth/login')}>
             Login here
           </span>

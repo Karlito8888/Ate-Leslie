@@ -5,6 +5,8 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import { store } from './store'
 import App from './App'
 import Home from './pages/Home'
+import RegisterForm from './components/auth/RegisterForm';
+import Login from './components/auth/Login';
 import './styles/main.scss'
 
 const router = createBrowserRouter([
@@ -16,11 +18,14 @@ const router = createBrowserRouter([
         index: true,
         element: <Home />,
       },
-      // Ajoutez ici vos autres routes
-      // {
-      //   path: '/about',
-      //   element: <About />,
-      // },
+      {
+        path: '/auth/register',
+        element: <RegisterForm />,  // Route pour le formulaire d'inscription
+      },
+      {
+        path: '/auth/login',
+        element: <Login />,  // Nouvelle route pour le formulaire de connexion
+      },
     ],
   },
 ])

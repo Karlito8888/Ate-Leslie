@@ -1,6 +1,6 @@
 @use '../../styles/globals/variables' as *;
 
-.registerContainer {
+.loginContainer {
   min-height: 100%;
   display: flex;
   align-items: center;
@@ -13,7 +13,7 @@
   // );
 }
 
-.registerForm {
+.loginForm {
   width: 100%;
   max-width: clamp(20rem, 15rem + 20vw, 30rem);
   padding: clamp(1.5rem, 1rem + 2vw, 2.5rem);
@@ -78,8 +78,8 @@
   .apiError {
     margin: 1rem 0;
     padding: 0.8rem;
-    background: rgba($color-error-bg, 0.1);
-    border: 1px solid rgba($color-error-border, 0.2);
+    background: $color-error-bg;
+    border: 1px solid $color-error-border;
     border-radius: $border-radius-sm;
     color: $color-error-text;
     text-align: center;
@@ -90,7 +90,7 @@
     width: 100%;
     padding: 0.8rem;
     margin-top: 1rem;
-    background: $color-primary;
+    background: $color-primary-dark;
     color: $color-white;
     border: none;
     border-radius: $border-radius-sm;
@@ -110,7 +110,7 @@
     }
   }
 
-  .loginLink {
+  .registerLink {
     margin-top: 1.5rem;
     text-align: center;
     color: rgba($color-white, 0.7);
@@ -128,10 +128,4 @@
       }
     }
   }
-}
-
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-5px); }
-  75% { transform: translateX(5px); }
 }

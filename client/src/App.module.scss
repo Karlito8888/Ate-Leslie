@@ -11,9 +11,12 @@
   padding-bottom: 20px;
   padding-left: clamp(3.75rem, 2.9688rem + 2.5vw, 4.375rem);
   min-height: 100vh;
-  transition: padding-left 0.3s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  // transition: padding-left 0.3s ease-in-out;
   
-  &.menuExpanded {
-    padding-left: 270px;
-  }
+  // &.menuExpanded {
+  //   padding-left: 270px;
+  // }
 }
